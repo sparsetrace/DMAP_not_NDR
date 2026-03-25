@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def plot_dmap_spectra_overlay(
     L_nx,
