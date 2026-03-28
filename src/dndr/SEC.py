@@ -268,34 +268,33 @@ class SEC:
         s_eval, s_vec = eigh(sob)
         keep = s_eval > self.tau_ratio * s_eval.max()
         U = s_vec[:, keep]
-
+    
         Gt = 0.5 * ((U.T @ self.G_ @ U) + (U.T @ self.G_ @ U).T)
         Et = 0.5 * ((U.T @ self.E_ @ U) + (U.T @ self.E_ @ U).T)
-
+    
         g_eval = np.linalg.eigvalsh(Gt)
         if g_eval.min() <= 1e-12:
             Gt = Gt + (1e-10 - g_eval.min()) * np.eye(Gt.shape[0])
-
+    
         m = min(self.n_sec_fields, Gt.shape[0] - 1)
         rng = np.random.default_rng(self.random_state)
         X0 = rng.standard_normal((Gt.shape[0], m))
-
+    
         Aop = LinearOperator(Gt.shape, matvec=lambda x: Et @ x, matmat=lambda X: Et @ X, dtype=float)
         Bop = LinearOperator(Gt.shape, matvec=lambda x: Gt @ x, matmat=lambda X: Gt @ X, dtype=float)
-
+    
         vals, vecs = lobpcg(Aop, X0, B=Bop, largest=False, tol=1e-6, maxiter=300)
         order = np.argsort(vals)
         vals = vals[order]
         vecs = vecs[:, order]
-
+    
         coeffs = U @ vecs
-        op_coeffs = self.G_ @ coeffs
-
+    
         self.sec_evals_ = vals
-        self.sec_frame_coeffs_ = coeffs  # columns are flattened J x J arrays
-        self.sec_operator_coeffs_ = op_coeffs
-        self.sec_operator_mats_ = [op_coeffs[:, i].reshape(self.n_eigs_sec, self.n_eigs_sec) for i in range(m)]
+        self.sec_frame_coeffs_ = coeffs
+        self.sec_field_mats_ = [coeffs[:, i].reshape(self.n_eigs_sec, self.n_eigs_sec) for i in range(m)]
 
+    
     def nystrom_phi(self, y: np.ndarray) -> np.ndarray:
         y = np.asarray(y, dtype=float).reshape(-1)
         d2 = np.sum((self.X - y[None, :]) ** 2, axis=1)
